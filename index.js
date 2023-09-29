@@ -50,12 +50,12 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
-    const classesCollection = client.db("Epic-Tutors").collection("classes");
-    const usersCollection = client.db("Epic-Tutors").collection("users");
+    const classesCollection = client.db("epic-tutors").collection("classes");
+    const usersCollection = client.db("epic-tutors").collection("users");
     const selectedClassCollection = client
-      .db("Epic-Tutors")
+      .db("epic-tutors")
       .collection("selectedClass");
-    const paymentCollection = client.db("Epic-Tutors").collection("payments");
+    const paymentCollection = client.db("epic-tutors").collection("payments");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
