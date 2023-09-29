@@ -204,14 +204,6 @@ async function run() {
           .send({ error: true, message: "forbidden access" });
       }
 
-      // Delete Selected Class
-      app.delete("/deleteSelectedClass/:id", verifyJWT, async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await selectedClassCollection.deleteOne(query);
-        res.send(result);
-      });
-
       const query = { email: email };
       const result = await selectedClassCollection.find(query).toArray();
       res.send(result);
@@ -306,9 +298,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Edu-Cademy is running");
+  res.send("Epic-Tutors is running");
 });
 
 app.listen(port, () => {
-  console.log(`Edu-Cademy running at:${port}`);
+  console.log(`Epic-Tutors running at:${port}`);
 });
