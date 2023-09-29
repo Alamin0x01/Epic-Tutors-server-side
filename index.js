@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -55,7 +54,6 @@ async function run() {
     const selectedClassCollection = client
       .db("epic-tutors")
       .collection("selectedClass");
-    const paymentCollection = client.db("epic-tutors").collection("payments");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -216,107 +214,6 @@ async function run() {
 
       const query = { email: email };
       const result = await selectedClassCollection.find(query).toArray();
-      res.send(result);
-    });
-
-    // Crete payment intent
-    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
-      const { classPrice } = req.body;
-      const amount = classPrice * 100;
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount,
-        currency: "usd",
-        payment_method_types: ["card"],
-      });
-      res.send({
-        clientSecret: paymentIntent.client_secret,
-      });
-    });
-
-    // Post payment to the database
-    app.post("/payment", verifyJWT, async (req, res) => {
-      const payment = req.body;
-      const insertResult = await paymentCollection.insertOne(payment);
-      const deleteQuery = {
-        _id: new ObjectId(payment.selectedClassId),
-      };
-      const deleteResult = await selectedClassCollection.deleteOne(deleteQuery);
-      const updateQuery = {
-        _id: new ObjectId(payment.classId),
-      };
-      const updateResult = await classesCollection.updateOne(updateQuery, {
-        $inc: { enrolled: 1 },
-      });
-
-      const updateSeatsQuery = {
-        _id: new ObjectId(payment.classId),
-      };
-      const updateSeatsResult = await classesCollection.updateOne(
-        updateSeatsQuery,
-        {
-          $inc: { available_seats: -1 },
-        }
-      );
-      const classId = payment.classId;
-      const query = { _id: new ObjectId(classId) };
-
-      const classData = await classesCollection.findOne(query);
-      const instructorEmail = classData.email;
-
-      const updateInstructorQuery = { email: instructorEmail };
-
-      // if instructor has no students field, create one
-      const updateInstructorResult = await usersCollection.updateOne(
-        updateInstructorQuery,
-        {
-          $inc: { students: 1 },
-        }
-      );
-
-      res.send({
-        insertResult,
-        deleteResult,
-        updateResult,
-        updateSeatsResult,
-        updateInstructorResult,
-      });
-    });
-
-    // Get paid classes from the database by email
-
-    app.get("/paidClasses", verifyJWT, async (req, res) => {
-      const email = req.query.email;
-      if (!email) {
-        return res.send([]);
-      }
-
-      if (req.decoded.email !== email) {
-        return res
-          .status(403)
-          .send({ error: true, message: "forbidden access" });
-      }
-
-      const query = { email: email };
-      const result = await paymentCollection.find(query).toArray();
-      res.send(result);
-    });
-
-    // Get payment history from the database by email
-    app.get("/paymentHistory", verifyJWT, async (req, res) => {
-      const email = req.query.email;
-      if (!email) {
-        return res.send([]);
-      }
-
-      if (req.decoded.email !== email) {
-        return res
-          .status(403)
-          .send({ error: true, message: "forbidden access" });
-      }
-
-      const query = { email: email };
-      const sort = { date: -1 };
-      const result = await paymentCollection.find(query).sort(sort).toArray();
       res.send(result);
     });
 
